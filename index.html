@@ -108,12 +108,16 @@
         justify-content: center;
         gap: 1rem;
         cursor: pointer;
-        transition: border-color 0.3s;
+        transition: border-color 0.3s, background 0.4s;
         flex-shrink: 0;
       }
 
       .song-card.playing {
         animation: morphing 10s infinite;
+      }
+
+      .song-card.stopping {
+        transition: border-radius 0.6s ease, border-color 0.3s, background 0.4s;
       }
 
       .song-card .song-name {
@@ -123,11 +127,6 @@
         letter-spacing: 0.05em;
         text-align: center;
         padding: 0 1rem;
-        min-height: 2.2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: font-size 0.25s ease;
       }
 
       .song-card.playing > .song-name {
@@ -976,8 +975,32 @@
           const card = document.querySelector(`.song-card[data-song="${song.name}"]`);
           if (!card) return;
           const playing = song.name === currentSong;
-          card.classList.toggle("playing", playing);
-          card.style.background = playing ? colors[idx] : "";
+          const wasPlaying = card.classList.contains("playing");
+
+          if (wasPlaying && !playing) {
+            // Snapshot the live computed border-radius while the animation is
+            // still running, then pin it as an inline style before killing the
+            // animation — giving the transition a real from-value to start from.
+            const live = getComputedStyle(card).borderRadius;
+            card.classList.remove("playing");
+            card.style.borderRadius = live;
+            card.style.background = "";
+            card.classList.add("stopping");
+            // Two rAFs ensure the browser has committed the pinned value to
+            // layout before we change it, otherwise it collapses to a no-op.
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              card.style.borderRadius = "50%";
+              card.addEventListener("transitionend", (e) => {
+                if (e.propertyName !== "border-radius") return;
+                card.classList.remove("stopping");
+                card.style.borderRadius = "";
+              }, { once: true });
+            }));
+          } else {
+            card.classList.toggle("playing", playing);
+            card.style.background = playing ? colors[idx] : "";
+          }
+
           const btn = card.querySelector("button");
           btn.innerHTML = playing ? "&#x25a0;" : "&#x25BA;";
           btn.title = playing ? "Stop" : "Play";

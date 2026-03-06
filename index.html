@@ -136,18 +136,11 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        -webkit-tap-highlight-color: transparent;
         transition:
           background 0.2s,
           color 0.2s;
       }
-      @media (hover: hover) {
-        .song-card button:hover {
-          background: var(--ink);
-          color: var(--bg);
-        }
-      }
-      .song-card button:active {
+      .song-card button:hover {
         background: var(--ink);
         color: var(--bg);
       }
@@ -213,7 +206,56 @@
     </main>
 
     <script>
-      // ── UNMUTE (iOS AudioContext unlock) ──
+      // ── iOS SPEAKER UNLOCK ──
+      // iOS routes WebAudio to the earpiece by default. Playing a silent <audio>
+      // element first forces the session into the media-playback category
+      // (loudspeaker). The element must have x-webkit-airplay="deny" and be
+      // created via innerHTML — setting the attribute in JS doesn't work.
+      function iosUnlockSpeaker() {
+        var ua = navigator.userAgent.toLowerCase();
+        var isIOS =
+          (/iphone|ipad|ipod/.test(ua) &&
+            !/like iphone|like ipad|like ipod/.test(ua)) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        if (!isIOS) return;
+
+        var tmp = document.createElement("div");
+        tmp.innerHTML = "<audio x-webkit-airplay='deny'></audio>";
+        var tag = tmp.children[0];
+        tag.controls = false;
+        tag.disableRemotePlayback = true;
+        tag.preload = "auto";
+        tag.loop = true;
+
+        // 0.01s of silence, VBR 220-260 Joint Stereo — must be high bitrate so
+        // WebAudio mixes at the same rate and doesn't get downsampled to earpiece
+        function r(c, a) {
+          var e = a;
+          for (; c > 1; c--) e += a;
+          return e;
+        }
+        tag.src =
+          "data:audio/mpeg;base64,//uQx" +
+          r(23, "A") +
+          "WGluZwAAAA8AAAACAAACcQCA" +
+          r(16, "gICA") +
+          r(66, "/") +
+          "8AAABhTEFNRTMuMTAwA8MAAAAAAAAAABQgJAUHQQAB9AAAAnGMHkkI" +
+          r(320, "A") +
+          "//sQxAADgnABGiAAQBCqgCRMAAgEAH" +
+          r(15, "/") +
+          "7+n/9FTuQsQH//////2NG0jWUGlio5gLQTOtIoeR2WX////X4s9Atb/JRVCbBUpeRUq" +
+          r(18, "/") +
+          "9RUi0f2jn/+xDECgPCjAEQAABN4AAANIAAAAQVTEFNRTMuMTAw" +
+          r(97, "V") +
+          "Q==";
+
+        document.body.appendChild(tag);
+        var p = tag.play();
+        if (p) p.catch(() => {});
+      }
+
+      // ── UNMUTE (keeps AudioContext alive on iOS after interruptions) ──
       function unmute(context) {
         var audioUnlockingEvents = [
           "click",
@@ -860,12 +902,7 @@
 
       async function playSong(song) {
         if (isPlaying) stopSong();
-        // Tone.start() resumes the AudioContext from a user gesture.
-        // unmute() keeps it alive on iOS where the context can re-suspend.
         await Tone.start();
-        unmute(
-          Tone.context.rawContext ?? Tone.context._context ?? Tone.context,
-        );
         currentSong = song.name;
         isPlaying = true;
         renderCards();
@@ -892,12 +929,13 @@
           btn.style.color = "#f5f0e8";
           btn.innerHTML = playing ? "&#x25a0;" : "&#x25BA;";
           btn.title = playing ? "Stop" : "Play";
-          // touchstart fires synchronously inside the gesture, giving iOS
-          // the user-gesture context it needs to resume the AudioContext
-          // before the async playSong chain runs.
+          // touchstart fires synchronously within the gesture — iOS needs
+          // iosUnlockSpeaker() and Tone.start() called here, before the async
+          // playSong chain, to route audio to the loudspeaker correctly.
           btn.addEventListener(
             "touchstart",
             () => {
+              iosUnlockSpeaker();
               Tone.start();
             },
             { passive: true },

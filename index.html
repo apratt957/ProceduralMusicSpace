@@ -26,7 +26,7 @@
         --red: #ef476f;
         --blue: #26547c;
         --yellow: #ffd166;
-        --green: #06d6a0;
+        --green: #024f3b;
         --accent: #ff3355;
         --nav-w: 60px;
       }
@@ -123,6 +123,11 @@
         letter-spacing: 0.05em;
         text-align: center;
         padding: 0 1rem;
+        min-height: 2.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: font-size 0.25s ease;
       }
 
       .song-card.playing > .song-name {
@@ -910,7 +915,7 @@
         }
         isPlaying = false;
         currentSong = null;
-        renderCards();
+        updateCards();
       }
 
       async function playSong(song) {
@@ -918,21 +923,22 @@
         await Tone.start();
         currentSong = song.name;
         isPlaying = true;
-        renderCards();
+        updateCards();
         disposeSong = song.makeSong();
       }
 
       // ── RENDER ──
-      const colors = ["#26547C", "#EF476F", "#FFD166", "#06D6A0", "#ffb3c1"];
+      // Cards are built once on init; subsequent calls only patch classes/attrs
+      // so CSS transitions have a persistent DOM element to animate between states.
+      const colors = ["#26547C", "#EF476F", "#FFD166", "#024F3B", "#ffb3c1"];
 
       function renderCards() {
         const container = document.getElementById("page-songs");
         container.innerHTML = "";
         songs.forEach((song, idx) => {
-          const playing = song.name === currentSong;
           const card = document.createElement("div");
-          card.className = "song-card" + (playing ? " playing" : "");
-          card.style.background = playing ? colors[idx] : "";
+          card.className = "song-card";
+          card.dataset.song = song.name;
 
           const name = document.createElement("p");
           name.className = "song-name";
@@ -940,11 +946,8 @@
 
           const btn = document.createElement("button");
           btn.style.color = "#f5f0e8";
-          btn.innerHTML = playing ? "&#x25a0;" : "&#x25BA;";
-          btn.title = playing ? "Stop" : "Play";
-          // touchstart fires synchronously within the gesture — iOS needs
-          // iosUnlockSpeaker() and Tone.start() called here, before the async
-          // playSong chain, to route audio to the loudspeaker correctly.
+          btn.innerHTML = "&#x25BA;";
+          btn.title = "Play";
           btn.addEventListener(
             "touchstart",
             () => {
@@ -954,6 +957,7 @@
             { passive: true },
           );
           btn.addEventListener("click", () => {
+            const playing = song.name === currentSong;
             if (playing) {
               stopSong();
             } else {
@@ -964,6 +968,19 @@
           card.appendChild(name);
           card.appendChild(btn);
           container.appendChild(card);
+        });
+      }
+
+      function updateCards() {
+        songs.forEach((song, idx) => {
+          const card = document.querySelector(`.song-card[data-song="${song.name}"]`);
+          if (!card) return;
+          const playing = song.name === currentSong;
+          card.classList.toggle("playing", playing);
+          card.style.background = playing ? colors[idx] : "";
+          const btn = card.querySelector("button");
+          btn.innerHTML = playing ? "&#x25a0;" : "&#x25BA;";
+          btn.title = playing ? "Stop" : "Play";
         });
       }
 

@@ -23,6 +23,10 @@
         --bg: #f5f0e8;
         --ink: #111;
         --pink: #ffb3c1;
+        --red: #ef476f;
+        --blue: #26547c;
+        --yellow: #ffd166;
+        --green: #06d6a0;
         --accent: #ff3355;
         --nav-w: 60px;
       }
@@ -108,7 +112,6 @@
       }
 
       .song-card.playing {
-        background: var(--pink);
         animation: morphing 10s infinite;
       }
 
@@ -861,13 +864,16 @@
       }
 
       // ── RENDER ──
+      const colors = ["#26547C", "#EF476F", "#FFD166", "#06D6A0", "#ffb3c1"];
+
       function renderCards() {
         const container = document.getElementById("page-songs");
         container.innerHTML = "";
-        songs.forEach((song) => {
+        songs.forEach((song, idx) => {
           const playing = song.name === currentSong;
           const card = document.createElement("div");
           card.className = "song-card" + (playing ? " playing" : "");
+          card.style.background = playing ? colors[idx] : "";
 
           const name = document.createElement("p");
           name.className = "song-name";

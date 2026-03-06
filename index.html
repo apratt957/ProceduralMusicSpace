@@ -20,8 +20,8 @@
       }
 
       :root {
-        --bg: #f5f0e8;
-        --ink: #111;
+        --bg: #111;
+        --ink: #f5f0e8;
         --pink: #ffb3c1;
         --red: #ef476f;
         --blue: #26547c;
@@ -89,6 +89,7 @@
       /* ── SONGS PAGE ── */
       #page-songs {
         flex-wrap: wrap;
+        justify-content: center;
         align-content: center;
         gap: 2rem;
         padding: 2rem 2rem 2rem 3rem;
@@ -880,6 +881,7 @@
           name.textContent = song.name;
 
           const btn = document.createElement("button");
+          btn.style.color = "#f5f0e8";
           btn.innerHTML = playing ? "&#x25a0;" : "&#x25BA;";
           btn.title = playing ? "Stop" : "Play";
           btn.addEventListener("click", () => {

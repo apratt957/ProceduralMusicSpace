@@ -73,11 +73,23 @@
         color: var(--ink);
         transition: color 0.2s;
       }
-      #nav a:hover {
-        color: var(--accent);
+      @media (hover: hover) {
+        #nav a:hover {
+          color: var(--accent);
+        }
       }
       #nav a.active {
         color: var(--accent);
+      }
+
+      #link-controls {
+        opacity: 0.25;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      #link-controls.enabled {
+        opacity: 1;
+        pointer-events: auto;
       }
 
       /* ── PAGES ── */
@@ -250,71 +262,7 @@
 
       /* ── CONTROLS DRAWER ── */
 
-      /* The tab is detached from the drawer panel — it lives on the
-         right edge of the screen, rotated vertically, well above the
-         browser chrome so tapping it doesn't trigger the address bar */
-      #drawer-tab {
-        position: fixed;
-        right: 0;
-        /* Sits in the lower-right but clear of browser chrome */
-        bottom: 25vh;
-        z-index: 201;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 0.75rem;
-        background: rgba(17, 17, 17, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(245, 240, 232, 0.25);
-        border-right: none;
-        border-radius: 8px 0 0 8px;
-        cursor: pointer;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-        /* Rotate so text reads bottom-to-top */
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        transform: translateX(100%);
-        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
-      }
-
-      #drawer-tab.visible {
-        transform: translateX(0);
-      }
-
-      #drawer-tab span {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 0.65rem;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: var(--ink);
-        opacity: 0.75;
-        transition: opacity 0.2s;
-      }
-
-      /* Small chevron — points left (collapsed) or right (open) */
-      #drawer-tab::before {
-        content: "◀";
-        font-size: 0.45rem;
-        color: var(--ink);
-        opacity: 0.45;
-        transition: transform 0.35s ease;
-        /* Counter-rotate so the glyph stays upright in vertical context */
-        display: block;
-      }
-
-      #drawer-tab.open::before {
-        transform: rotate(180deg);
-      }
-
-      #drawer-tab:active span,
-      #drawer-tab:active::before {
-        opacity: 1;
-      }
-
-      /* The panel slides up from the bottom, no tab attached */
+      /* The panel slides up from the bottom */
       #drawer {
         position: fixed;
         bottom: 0;
@@ -426,6 +374,7 @@
     <nav id="nav">
       <a href="#" data-page="about" id="link-about">ABOUT</a>
       <a href="#" data-page="songs" id="link-songs" class="active">SONGS</a>
+      <a href="#" id="link-controls">CONTROLS</a>
     </nav>
 
     <!-- SONGS PAGE -->
@@ -442,9 +391,6 @@
 
     <!-- CONTROLS DRAWER -->
     <div id="drawer-overlay"></div>
-    <div id="drawer-tab">
-      <span>CONTROLS</span>
-    </div>
     <div id="drawer">
       <div id="drawer-panel">
         <div class="drawer-control">
@@ -1967,23 +1913,24 @@
           .querySelectorAll(".page")
           .forEach((p) => p.classList.remove("active"));
         document
-          .querySelectorAll("#nav a")
+          .querySelectorAll("#nav a[data-page]")
           .forEach((a) => a.classList.remove("active"));
         document.getElementById("page-" + page).classList.add("active");
         document.getElementById("link-" + page).classList.add("active");
       }
 
-      document.querySelectorAll("#nav a").forEach((a) => {
+      document.querySelectorAll("#nav a[data-page]").forEach((a) => {
         a.addEventListener("click", (e) => {
           e.preventDefault();
           navigate(a.dataset.page);
         });
       });
 
+
       // ── CONTROLS DRAWER ──
       const drawer = document.getElementById("drawer");
       const drawerPanel = document.getElementById("drawer-panel");
-      const drawerTab = document.getElementById("drawer-tab");
+      const drawerTab = document.getElementById("link-controls");
       const bpmSlider = document.getElementById("bpm-slider");
       const bpmValue = document.getElementById("bpm-value");
       const reverbSlider = document.getElementById("reverb-slider");
@@ -2007,7 +1954,7 @@
         const panelH = getDrawerPanelHeight();
         drawerPanel.style.height = panelH + "px";
         drawer.classList.add("open");
-        drawerTab.classList.add("open");
+        drawerTab.classList.add("active");
         document.body.classList.add("drawer-open");
         requestAnimationFrame(() => scrollToPlayingCard());
       }
@@ -2016,7 +1963,7 @@
         drawerOpen = false;
         drawerPanel.style.height = "0";
         drawer.classList.remove("open");
-        drawerTab.classList.remove("open");
+        drawerTab.classList.remove("active");
         document.body.classList.remove("drawer-open");
       }
 
@@ -2048,13 +1995,13 @@
       }
 
       function showDrawerTab() {
-        drawerTab.classList.add("visible");
+        drawerTab.classList.add("enabled");
         document.getElementById("page-songs").classList.add("drawer-visible");
       }
 
       function hideDrawerTab() {
         closeDrawer();
-        drawerTab.classList.remove("visible");
+        drawerTab.classList.remove("enabled");
         document
           .getElementById("page-songs")
           .classList.remove("drawer-visible");
@@ -2070,7 +2017,7 @@
         if (baseBpm) Tone.Transport.bpm.value = baseBpm;
       }
 
-      drawerTab.addEventListener("click", toggleDrawer);
+      drawerTab.addEventListener("click", (e) => { e.preventDefault(); toggleDrawer(); });
 
       bpmSlider.addEventListener("input", () => {
         const mult = parseFloat(bpmSlider.value);

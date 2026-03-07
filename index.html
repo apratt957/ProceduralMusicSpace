@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>procgenjams</title>
+    <title>Procedural Music Space</title>
+    <link rel="icon" href="./favicon.ico" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap"
@@ -309,7 +310,9 @@
       }
 
       #drawer-tab:active span,
-      #drawer-tab:active::before { opacity: 1; }
+      #drawer-tab:active::before {
+        opacity: 1;
+      }
 
       /* The panel slides up from the bottom, no tab attached */
       #drawer {
@@ -345,8 +348,9 @@
         gap: 2rem;
         overflow: hidden;
         height: 0;
-        transition: height 0.45s cubic-bezier(0.32, 0.72, 0, 1),
-                    padding 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+        transition:
+          height 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+          padding 0.45s cubic-bezier(0.32, 0.72, 0, 1);
       }
 
       #drawer.open #drawer-panel {
@@ -436,7 +440,6 @@
       <img src="./assets/musicman.png" alt="" />
     </main>
 
-
     <!-- CONTROLS DRAWER -->
     <div id="drawer-overlay"></div>
     <div id="drawer-tab">
@@ -449,16 +452,30 @@
             <span class="drawer-label">BPM</span>
             <span class="drawer-value" id="bpm-value">1.0×</span>
           </div>
-          <input type="range" class="drawer-slider" id="bpm-slider"
-            min="0.5" max="2" step="0.01" value="1">
+          <input
+            type="range"
+            class="drawer-slider"
+            id="bpm-slider"
+            min="0.5"
+            max="2"
+            step="0.01"
+            value="1"
+          />
         </div>
         <div class="drawer-control">
           <div class="drawer-control-header">
             <span class="drawer-label">REVERB</span>
             <span class="drawer-value" id="reverb-value">0%</span>
           </div>
-          <input type="range" class="drawer-slider" id="reverb-slider"
-            min="0" max="1" step="0.01" value="0">
+          <input
+            type="range"
+            class="drawer-slider"
+            id="reverb-slider"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0"
+          />
         </div>
       </div>
     </div>
@@ -1964,21 +1981,21 @@
       });
 
       // ── CONTROLS DRAWER ──
-      const drawer      = document.getElementById("drawer");
+      const drawer = document.getElementById("drawer");
       const drawerPanel = document.getElementById("drawer-panel");
-      const drawerTab   = document.getElementById("drawer-tab");
-      const bpmSlider   = document.getElementById("bpm-slider");
-      const bpmValue    = document.getElementById("bpm-value");
+      const drawerTab = document.getElementById("drawer-tab");
+      const bpmSlider = document.getElementById("bpm-slider");
+      const bpmValue = document.getElementById("bpm-value");
       const reverbSlider = document.getElementById("reverb-slider");
-      const reverbValue  = document.getElementById("reverb-value");
+      const reverbValue = document.getElementById("reverb-value");
 
       let drawerOpen = false;
-      let baseBpm    = 120; // updated when a song starts
+      let baseBpm = 120; // updated when a song starts
 
       function getDrawerPanelHeight() {
         // Panel takes 40–60% of viewport height, leaving the rest for the circle
         const tabH = 40;
-        const raw  = window.innerHeight * 0.52;
+        const raw = window.innerHeight * 0.52;
         return Math.round(Math.max(raw, 160));
       }
 
@@ -2009,21 +2026,25 @@
       }
 
       function isMobile() {
-        return window.matchMedia("(max-width: 768px) or (pointer: coarse)").matches;
+        return window.matchMedia("(max-width: 768px) or (pointer: coarse)")
+          .matches;
       }
 
       function scrollToPlayingCard() {
         if (!isMobile()) return;
         const card = document.querySelector(".song-card.playing");
         if (!card) return;
-        const tabH    = 40;
-        const panelH  = drawerOpen ? getDrawerPanelHeight() : 0;
+        const tabH = 40;
+        const panelH = drawerOpen ? getDrawerPanelHeight() : 0;
         const drawerH = tabH + panelH;
-        const available  = window.innerHeight - drawerH;
-        const cardTop    = card.getBoundingClientRect().top + window.scrollY;
-        const cardH      = card.offsetHeight;
+        const available = window.innerHeight - drawerH;
+        const cardTop = card.getBoundingClientRect().top + window.scrollY;
+        const cardH = card.offsetHeight;
         const targetScrollY = cardTop - Math.round((available - cardH) / 2);
-        window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
+        window.scrollTo({
+          top: Math.max(0, targetScrollY),
+          behavior: "smooth",
+        });
       }
 
       function showDrawerTab() {
@@ -2034,13 +2055,15 @@
       function hideDrawerTab() {
         closeDrawer();
         drawerTab.classList.remove("visible");
-        document.getElementById("page-songs").classList.remove("drawer-visible");
+        document
+          .getElementById("page-songs")
+          .classList.remove("drawer-visible");
       }
 
       function resetControls() {
-        bpmSlider.value  = 1;
+        bpmSlider.value = 1;
         reverbSlider.value = 0;
-        bpmValue.textContent   = "1.0×";
+        bpmValue.textContent = "1.0×";
         reverbValue.textContent = "0%";
         reverbSend.gain.value = 0;
         // BPM reset handled by each song's dispose already, but sync transport too

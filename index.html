@@ -28,7 +28,7 @@
         --blue: #26547c;
         --yellow: #ffd166;
         --green: #024f3b;
-        --accent: #ff3355;
+        --accent: #ffcc33;
         --nav-w: 60px;
       }
 
@@ -192,6 +192,7 @@
       }
 
       .song-card button {
+        color: var(--ink);
         background: none;
         border: 1.5px solid var(--ink);
         width: 44px;
@@ -1835,7 +1836,6 @@
           name.textContent = song.name;
 
           const btn = document.createElement("button");
-          btn.style.color = "#f5f0e8";
           btn.innerHTML = "&#x25BA;";
           btn.title = "Play";
           btn.addEventListener(
@@ -1925,7 +1925,6 @@
           navigate(a.dataset.page);
         });
       });
-
 
       // ── CONTROLS DRAWER ──
       const drawer = document.getElementById("drawer");
@@ -2017,7 +2016,10 @@
         if (baseBpm) Tone.Transport.bpm.value = baseBpm;
       }
 
-      drawerTab.addEventListener("click", (e) => { e.preventDefault(); toggleDrawer(); });
+      drawerTab.addEventListener("click", (e) => {
+        e.preventDefault();
+        toggleDrawer();
+      });
 
       bpmSlider.addEventListener("input", () => {
         const mult = parseFloat(bpmSlider.value);

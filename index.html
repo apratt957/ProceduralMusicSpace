@@ -248,75 +248,77 @@
       }
 
       /* ── CONTROLS DRAWER ── */
-      #drawer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 200;
-        /* Whole drawer starts off-screen; slides up when a song plays */
-        transform: translateY(100%);
-        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
-      }
 
-      #drawer.visible {
-        /* Tab only visible — panel still collapsed */
-        transform: translateY(0);
-      }
-
-      /* Tab sits above the panel, pinned to the right like a folder tab */
-      #drawer-tab-row {
-        display: flex;
-        justify-content: flex-end;
-        /* No background — just the tab floats here */
-      }
-
+      /* The tab is detached from the drawer panel — it lives on the
+         right edge of the screen, rotated vertically, well above the
+         browser chrome so tapping it doesn't trigger the address bar */
       #drawer-tab {
+        position: fixed;
+        right: 0;
+        /* Sits in the lower-right but clear of browser chrome */
+        bottom: 25vh;
+        z-index: 201;
         display: inline-flex;
         align-items: center;
-        gap: 0.45rem;
-        height: 34px;
-        padding: 0 1rem;
+        gap: 0.5rem;
+        padding: 0.6rem 0.75rem;
         background: rgba(17, 17, 17, 0.85);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(245, 240, 232, 0.25);
-        border-left: 1px solid rgba(245, 240, 232, 0.25);
-        border-right: 1px solid rgba(245, 240, 232, 0.25);
-        border-radius: 8px 8px 0 0;
+        border: 1px solid rgba(245, 240, 232, 0.25);
+        border-right: none;
+        border-radius: 8px 0 0 8px;
         cursor: pointer;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
-        /* Right margin so it doesn't hug the very edge */
-        margin-right: 1.5rem;
+        /* Rotate so text reads bottom-to-top */
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: translateX(100%);
+        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      #drawer-tab.visible {
+        transform: translateX(0);
       }
 
       #drawer-tab span {
         font-family: "Syne", sans-serif;
         font-weight: 800;
         font-size: 0.65rem;
-        letter-spacing: 0.28em;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
         color: var(--ink);
-        opacity: 0.7;
+        opacity: 0.75;
         transition: opacity 0.2s;
       }
 
-      /* Small chevron that flips when open */
-      #drawer-tab::after {
-        content: "▲";
-        font-size: 0.5rem;
+      /* Small chevron — points left (collapsed) or right (open) */
+      #drawer-tab::before {
+        content: "◀";
+        font-size: 0.45rem;
         color: var(--ink);
-        opacity: 0.4;
-        transition: transform 0.35s ease, opacity 0.2s;
+        opacity: 0.45;
+        transition: transform 0.35s ease;
+        /* Counter-rotate so the glyph stays upright in vertical context */
+        display: block;
       }
 
-      #drawer.open #drawer-tab::after {
+      #drawer-tab.open::before {
         transform: rotate(180deg);
       }
 
       #drawer-tab:active span,
-      #drawer-tab:active::after { opacity: 1; }
+      #drawer-tab:active::before { opacity: 1; }
+
+      /* The panel slides up from the bottom, no tab attached */
+      #drawer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+      }
 
       #drawer-overlay {
         display: none;
@@ -348,7 +350,8 @@
       }
 
       #drawer.open #drawer-panel {
-        padding: 2rem 2.5rem 2.5rem;
+        /* Extra right padding so the vertical controls tab doesn't overlap sliders */
+        padding: 2rem 4.5rem 2.5rem 2.5rem;
       }
 
       .drawer-control {
@@ -435,13 +438,11 @@
 
 
     <!-- CONTROLS DRAWER -->
-    <div id="drawer-overlay" id="drawer-overlay"></div>
+    <div id="drawer-overlay"></div>
+    <div id="drawer-tab">
+      <span>CONTROLS</span>
+    </div>
     <div id="drawer">
-      <div id="drawer-tab-row">
-        <div id="drawer-tab">
-          <span>CONTROLS</span>
-        </div>
-      </div>
       <div id="drawer-panel">
         <div class="drawer-control">
           <div class="drawer-control-header">
@@ -1989,6 +1990,7 @@
         const panelH = getDrawerPanelHeight();
         drawerPanel.style.height = panelH + "px";
         drawer.classList.add("open");
+        drawerTab.classList.add("open");
         document.body.classList.add("drawer-open");
         requestAnimationFrame(() => scrollToPlayingCard());
       }
@@ -1997,6 +1999,7 @@
         drawerOpen = false;
         drawerPanel.style.height = "0";
         drawer.classList.remove("open");
+        drawerTab.classList.remove("open");
         document.body.classList.remove("drawer-open");
       }
 
@@ -2024,13 +2027,13 @@
       }
 
       function showDrawerTab() {
-        drawer.classList.add("visible");
+        drawerTab.classList.add("visible");
         document.getElementById("page-songs").classList.add("drawer-visible");
       }
 
       function hideDrawerTab() {
         closeDrawer();
-        drawer.classList.remove("visible");
+        drawerTab.classList.remove("visible");
         document.getElementById("page-songs").classList.remove("drawer-visible");
       }
 

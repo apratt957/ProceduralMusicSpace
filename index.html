@@ -31,9 +31,12 @@
         --nav-w: 60px;
       }
 
-      html,
-      body {
+      html {
         height: 100%;
+      }
+
+      body {
+        /* No height:100% — body must grow with content for window.scrollTo to work */
         background: var(--bg);
         color: var(--ink);
         font-family: "Space Mono", monospace;
@@ -94,6 +97,14 @@
         gap: 2rem;
         padding: 2rem 2rem 2rem 3rem;
         align-items: center;
+      }
+
+      /* On mobile, when the drawer tab is visible, add bottom padding so
+         the last card can scroll up into the framed area above the drawer */
+      @media (max-width: 768px) {
+        #page-songs.drawer-visible {
+          padding-bottom: 60vh;
+        }
       }
 
       /* ── SONG CARD ── */
@@ -235,6 +246,172 @@
         width: auto;
         object-fit: cover;
       }
+
+      /* ── CONTROLS DRAWER ── */
+      #drawer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        /* Whole drawer starts off-screen; slides up when a song plays */
+        transform: translateY(100%);
+        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      #drawer.visible {
+        /* Tab only visible — panel still collapsed */
+        transform: translateY(0);
+      }
+
+      /* Tab sits above the panel, pinned to the right like a folder tab */
+      #drawer-tab-row {
+        display: flex;
+        justify-content: flex-end;
+        /* No background — just the tab floats here */
+      }
+
+      #drawer-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        height: 34px;
+        padding: 0 1rem;
+        background: rgba(17, 17, 17, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(245, 240, 232, 0.25);
+        border-left: 1px solid rgba(245, 240, 232, 0.25);
+        border-right: 1px solid rgba(245, 240, 232, 0.25);
+        border-radius: 8px 8px 0 0;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        /* Right margin so it doesn't hug the very edge */
+        margin-right: 1.5rem;
+      }
+
+      #drawer-tab span {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 0.65rem;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--ink);
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      /* Small chevron that flips when open */
+      #drawer-tab::after {
+        content: "▲";
+        font-size: 0.5rem;
+        color: var(--ink);
+        opacity: 0.4;
+        transition: transform 0.35s ease, opacity 0.2s;
+      }
+
+      #drawer.open #drawer-tab::after {
+        transform: rotate(180deg);
+      }
+
+      #drawer-tab:active span,
+      #drawer-tab:active::after { opacity: 1; }
+
+      #drawer-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 199; /* just below drawer (200) */
+      }
+
+      body.drawer-open #drawer-overlay {
+        display: block;
+      }
+
+      #drawer-panel {
+        /* Dark frosted glass — same tint, slightly more opaque */
+        background: rgba(17, 17, 17, 0.85);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-top: 1px solid rgba(245, 240, 232, 0.15);
+        /* No padding when collapsed — avoids bleed-through */
+        padding: 0 2.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2rem;
+        overflow: hidden;
+        height: 0;
+        transition: height 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+                    padding 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      #drawer.open #drawer-panel {
+        padding: 2rem 2.5rem 2.5rem;
+      }
+
+      .drawer-control {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .drawer-control-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .drawer-label {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 0.7rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      .drawer-value {
+        font-family: "Space Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--ink);
+        opacity: 0.65;
+      }
+
+      .drawer-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 2px;
+        background: var(--ink);
+        outline: none;
+        border-radius: 1px;
+        cursor: pointer;
+      }
+
+      .drawer-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--ink);
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+
+      .drawer-slider:active::-webkit-slider-thumb {
+        transform: scale(1.3);
+      }
+
+      .drawer-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--ink);
+        border: none;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -255,6 +432,35 @@
       </p>
       <img src="./assets/musicman.png" alt="" />
     </main>
+
+
+    <!-- CONTROLS DRAWER -->
+    <div id="drawer-overlay" id="drawer-overlay"></div>
+    <div id="drawer">
+      <div id="drawer-tab-row">
+        <div id="drawer-tab">
+          <span>CONTROLS</span>
+        </div>
+      </div>
+      <div id="drawer-panel">
+        <div class="drawer-control">
+          <div class="drawer-control-header">
+            <span class="drawer-label">BPM</span>
+            <span class="drawer-value" id="bpm-value">1.0×</span>
+          </div>
+          <input type="range" class="drawer-slider" id="bpm-slider"
+            min="0.5" max="2" step="0.01" value="1">
+        </div>
+        <div class="drawer-control">
+          <div class="drawer-control-header">
+            <span class="drawer-label">REVERB</span>
+            <span class="drawer-value" id="reverb-value">0%</span>
+          </div>
+          <input type="range" class="drawer-slider" id="reverb-slider"
+            min="0" max="1" step="0.01" value="0">
+        </div>
+      </div>
+    </div>
 
     <script>
       // ── iOS SPEAKER UNLOCK ──
@@ -389,9 +595,9 @@
         rightSynth.connect(rightPanner);
         leftPanner.connect(echo);
         rightPanner.connect(echo);
-        echo.toDestination();
+        echo.connect(masterGain);
         echo.connect(delay);
-        delay.connect(Tone.getDestination());
+        delay.connect(masterGain);
         delay.connect(delayFade);
         delayFade.connect(delay);
 
@@ -461,7 +667,7 @@
               "8n.",
               0.15 + Math.random() * 0.25,
             );
-            pluck.chain(pluckDelay, pluckVerb, Tone.getDestination());
+            pluck.chain(pluckDelay, pluckVerb, masterGain);
 
             const pad = new Tone.PolySynth(Tone.Synth, {
               volume: -20 + Math.random() * 4,
@@ -477,7 +683,7 @@
               decay: 2 + Math.random() * 2,
               wet: 0.5 + Math.random() * 0.3,
             });
-            pad.chain(padVerb, Tone.getDestination());
+            pad.chain(padVerb, masterGain);
 
             const kick = new Tone.MembraneSynth({
               pitchDecay: 0.03 + Math.random() * 0.03,
@@ -497,8 +703,8 @@
               octaves: 1.5,
               volume: -20 + Math.random() * 4,
             });
-            kick.toDestination();
-            hat.toDestination();
+            kick.connect(masterGain);
+            hat.connect(masterGain);
 
             // Pick a random key from a pool of happy-sounding pentatonics
             const scales = [
@@ -641,7 +847,7 @@
               decay: 5 + Math.random() * 4,
               wet: 0.65 + Math.random() * 0.2,
             });
-            pad.chain(padChorus, padVerb, Tone.getDestination());
+            pad.chain(padChorus, padVerb, masterGain);
 
             const piano = new Tone.Synth({
               volume: -16 + Math.random() * 3,
@@ -661,7 +867,7 @@
               "4n",
               0.2 + Math.random() * 0.25,
             );
-            piano.chain(pianoDelay, pianoVerb, Tone.getDestination());
+            piano.chain(pianoDelay, pianoVerb, masterGain);
 
             // Pick from several melancholy modes/keys
             const chordSets = [
@@ -776,7 +982,7 @@
               decay: 1.5 + Math.random() * 1.5,
               wet: 0.15 + Math.random() * 0.2,
             });
-            lead.chain(leadChorus, leadDelay, leadVerb, Tone.getDestination());
+            lead.chain(leadChorus, leadDelay, leadVerb, masterGain);
 
             const bass = new Tone.Synth({
               volume: -14 + Math.random() * 3,
@@ -792,14 +998,14 @@
               350 + Math.random() * 200,
               "lowpass",
             );
-            bass.chain(bassFilter, Tone.getDestination());
+            bass.chain(bassFilter, masterGain);
 
             const kick = new Tone.MembraneSynth({
               pitchDecay: 0.04 + Math.random() * 0.03,
               octaves: 7 + Math.random() * 3,
               volume: -5 + Math.random() * 2,
             });
-            kick.toDestination();
+            kick.connect(masterGain);
 
             const hat = new Tone.MetalSynth({
               frequency: 600 + Math.random() * 400,
@@ -814,7 +1020,7 @@
               octaves: 1.5,
               volume: -22 + Math.random() * 4,
             });
-            hat.toDestination();
+            hat.connect(masterGain);
 
             // Pick a root note and build arp from it — different key each play
             const roots = ["A", "B", "C", "D", "E", "G"];
@@ -950,7 +1156,7 @@
               decay: 3 + Math.random() * 2,
               wet: 0.4 + Math.random() * 0.2,
             });
-            guitar.chain(gDelay, gVerb, Tone.getDestination());
+            guitar.chain(gDelay, gVerb, masterGain);
 
             const bass = new Tone.Synth({
               volume: -13,
@@ -962,7 +1168,7 @@
                 release: 0.2,
               },
             });
-            bass.toDestination();
+            bass.connect(masterGain);
 
             const snare = new Tone.NoiseSynth({
               volume: -20 + Math.random() * 3,
@@ -975,7 +1181,7 @@
               },
             });
             const snareFilter = new Tone.Filter(2400, "bandpass");
-            snare.chain(snareFilter, Tone.getDestination());
+            snare.chain(snareFilter, masterGain);
 
             const scales = [
               [
@@ -1066,7 +1272,7 @@
             });
             const brassFilter = new Tone.Filter(2200, "lowpass");
             const brassVerb = new Tone.Reverb({ decay: 1.5, wet: 0.22 });
-            brass.chain(brassFilter, brassVerb, Tone.getDestination());
+            brass.chain(brassFilter, brassVerb, masterGain);
 
             const organ = new Tone.PolySynth(Tone.Synth, {
               volume: -22 + Math.random() * 3,
@@ -1079,7 +1285,7 @@
               },
             });
             const organVerb = new Tone.Reverb({ decay: 2, wet: 0.3 });
-            organ.chain(organVerb, Tone.getDestination());
+            organ.chain(organVerb, masterGain);
 
             const bass = new Tone.Synth({
               volume: -14,
@@ -1092,7 +1298,7 @@
               },
             });
             const bassFilter = new Tone.Filter(420, "lowpass");
-            bass.chain(bassFilter, Tone.getDestination());
+            bass.chain(bassFilter, masterGain);
 
             const kick = new Tone.MembraneSynth({
               pitchDecay: 0.06,
@@ -1110,8 +1316,8 @@
               },
             });
             const snareFilter = new Tone.Filter(3200, "bandpass");
-            kick.toDestination();
-            snare.chain(snareFilter, Tone.getDestination());
+            kick.connect(masterGain);
+            snare.chain(snareFilter, masterGain);
 
             const themes = [
               {
@@ -1289,7 +1495,7 @@
               decay: 9 + Math.random() * 4,
               wet: 0.88,
             });
-            pad.chain(padChorus, padVerb, Tone.getDestination());
+            pad.chain(padChorus, padVerb, masterGain);
 
             const pluck = new Tone.PluckSynth({
               attackNoise: 1 + Math.random(),
@@ -1304,7 +1510,7 @@
               decay: 7 + Math.random() * 4,
               wet: 0.82,
             });
-            pluck.chain(pluckDelay, pluckVerb, Tone.getDestination());
+            pluck.chain(pluckDelay, pluckVerb, masterGain);
 
             const stoneBass = new Tone.Synth({
               volume: -18 + Math.random() * 3,
@@ -1317,7 +1523,7 @@
               },
             });
             const stoneVerb = new Tone.Reverb({ decay: 8, wet: 0.75 });
-            stoneBass.chain(stoneVerb, Tone.getDestination());
+            stoneBass.chain(stoneVerb, masterGain);
 
             const chime = new Tone.Synth({
               volume: -26 + Math.random() * 4,
@@ -1330,7 +1536,7 @@
               },
             });
             const chimeVerb = new Tone.Reverb({ decay: 11, wet: 0.96 });
-            chime.chain(chimeVerb, Tone.getDestination());
+            chime.chain(chimeVerb, masterGain);
 
             const modes = [
               {
@@ -1476,7 +1682,7 @@
               decay: 8 + Math.random() * 4,
               wet: 0.7 + Math.random() * 0.2,
             });
-            drone.chain(droneChorus, droneVerb, Tone.getDestination());
+            drone.chain(droneChorus, droneVerb, masterGain);
 
             const whine = new Tone.Synth({
               volume: -24 + Math.random() * 4,
@@ -1489,7 +1695,7 @@
               },
             });
             const whineVerb = new Tone.Reverb({ decay: 10, wet: 0.85 });
-            whine.chain(whineVerb, Tone.getDestination());
+            whine.chain(whineVerb, masterGain);
 
             const sub = new Tone.Synth({
               volume: -16 + Math.random() * 3,
@@ -1497,7 +1703,7 @@
               envelope: { attack: 2, decay: 3, sustain: 0.3, release: 5 },
             });
             const subVerb = new Tone.Reverb({ decay: 6, wet: 0.5 });
-            sub.chain(subVerb, Tone.getDestination());
+            sub.chain(subVerb, masterGain);
 
             const scrape = new Tone.MetalSynth({
               volume: -26 + Math.random() * 5,
@@ -1513,7 +1719,7 @@
               },
             });
             const scrapeVerb = new Tone.Reverb({ decay: 9, wet: 0.9 });
-            scrape.chain(scrapeVerb, Tone.getDestination());
+            scrape.chain(scrapeVerb, masterGain);
 
             // Dissonant, unresolved clusters
             const clusters = [
@@ -1588,6 +1794,19 @@
         },
       ];
 
+      // ── MASTER REVERB ──
+      // A single reverb node all songs route through.
+      // wet:0 by default — the drawer slider brings it up.
+      // masterGain is the hub all songs connect to.
+      // It fans out to destination (dry) and reverbSend (wet bus).
+      const masterGain = new Tone.Gain(1);
+      masterGain.toDestination();
+      const masterReverb = new Tone.Reverb({ decay: 4, wet: 1 });
+      masterReverb.toDestination();
+      const reverbSend = new Tone.Gain(0);
+      masterGain.connect(reverbSend);
+      reverbSend.connect(masterReverb);
+
       // ── STATE ──
       let currentSong = null;
       let isPlaying = false;
@@ -1604,6 +1823,8 @@
         isPlaying = false;
         currentSong = null;
         updateCards();
+        resetControls();
+        hideDrawerTab();
       }
 
       async function playSong(song) {
@@ -1613,6 +1834,12 @@
         isPlaying = true;
         updateCards();
         disposeSong = song.makeSong();
+        // Capture the BPM the song set so the slider multiplies from that base
+        baseBpm = Tone.Transport.bpm.value;
+        resetControls();
+        showDrawerTab();
+        // Wait for the drawer tab slide-in transition before scrolling
+        setTimeout(scrollToPlayingCard, 460);
       }
 
       // ── RENDER ──
@@ -1733,6 +1960,109 @@
           e.preventDefault();
           navigate(a.dataset.page);
         });
+      });
+
+      // ── CONTROLS DRAWER ──
+      const drawer      = document.getElementById("drawer");
+      const drawerPanel = document.getElementById("drawer-panel");
+      const drawerTab   = document.getElementById("drawer-tab");
+      const bpmSlider   = document.getElementById("bpm-slider");
+      const bpmValue    = document.getElementById("bpm-value");
+      const reverbSlider = document.getElementById("reverb-slider");
+      const reverbValue  = document.getElementById("reverb-value");
+
+      let drawerOpen = false;
+      let baseBpm    = 120; // updated when a song starts
+
+      function getDrawerPanelHeight() {
+        // Panel takes 40–60% of viewport height, leaving the rest for the circle
+        const tabH = 40;
+        const raw  = window.innerHeight * 0.52;
+        return Math.round(Math.max(raw, 160));
+      }
+
+      const drawerOverlay = document.getElementById("drawer-overlay");
+      drawerOverlay.addEventListener("click", () => closeDrawer());
+
+      function openDrawer() {
+        drawerOpen = true;
+        const panelH = getDrawerPanelHeight();
+        drawerPanel.style.height = panelH + "px";
+        drawer.classList.add("open");
+        document.body.classList.add("drawer-open");
+        requestAnimationFrame(() => scrollToPlayingCard());
+      }
+
+      function closeDrawer() {
+        drawerOpen = false;
+        drawerPanel.style.height = "0";
+        drawer.classList.remove("open");
+        document.body.classList.remove("drawer-open");
+      }
+
+      function toggleDrawer() {
+        if (drawerOpen) closeDrawer();
+        else openDrawer();
+      }
+
+      function isMobile() {
+        return window.matchMedia("(max-width: 768px) or (pointer: coarse)").matches;
+      }
+
+      function scrollToPlayingCard() {
+        if (!isMobile()) return;
+        const card = document.querySelector(".song-card.playing");
+        if (!card) return;
+        const tabH    = 40;
+        const panelH  = drawerOpen ? getDrawerPanelHeight() : 0;
+        const drawerH = tabH + panelH;
+        const available  = window.innerHeight - drawerH;
+        const cardTop    = card.getBoundingClientRect().top + window.scrollY;
+        const cardH      = card.offsetHeight;
+        const targetScrollY = cardTop - Math.round((available - cardH) / 2);
+        window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
+      }
+
+      function showDrawerTab() {
+        drawer.classList.add("visible");
+        document.getElementById("page-songs").classList.add("drawer-visible");
+      }
+
+      function hideDrawerTab() {
+        closeDrawer();
+        drawer.classList.remove("visible");
+        document.getElementById("page-songs").classList.remove("drawer-visible");
+      }
+
+      function resetControls() {
+        bpmSlider.value  = 1;
+        reverbSlider.value = 0;
+        bpmValue.textContent   = "1.0×";
+        reverbValue.textContent = "0%";
+        reverbSend.gain.value = 0;
+        // BPM reset handled by each song's dispose already, but sync transport too
+        if (baseBpm) Tone.Transport.bpm.value = baseBpm;
+      }
+
+      drawerTab.addEventListener("click", toggleDrawer);
+
+      bpmSlider.addEventListener("input", () => {
+        const mult = parseFloat(bpmSlider.value);
+        bpmValue.textContent = mult.toFixed(2) + "×";
+        Tone.Transport.bpm.value = baseBpm * mult;
+      });
+
+      reverbSlider.addEventListener("input", () => {
+        const wet = parseFloat(reverbSlider.value);
+        reverbValue.textContent = Math.round(wet * 100) + "%";
+        reverbSend.gain.rampTo(wet, 0.1);
+      });
+
+      window.addEventListener("resize", () => {
+        if (drawerOpen) {
+          drawerPanel.style.height = getDrawerPanelHeight() + "px";
+          requestAnimationFrame(() => scrollToPlayingCard());
+        }
       });
 
       // ── INIT ──

@@ -108,7 +108,9 @@
         justify-content: center;
         gap: 1rem;
         cursor: pointer;
-        transition: border-color 0.3s, background 0.4s;
+        transition:
+          border-color 0.3s,
+          background 0.4s;
         flex-shrink: 0;
       }
 
@@ -117,7 +119,10 @@
       }
 
       .song-card.stopping {
-        transition: border-radius 0.6s ease, border-color 0.3s, background 0.4s;
+        transition:
+          border-radius 0.6s ease,
+          border-color 0.3s,
+          background 0.4s;
       }
 
       .song-card .song-name {
@@ -125,6 +130,11 @@
         font-weight: 700;
         font-size: 1rem;
         letter-spacing: 0.05em;
+        min-height: 2.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: font-size 0.25s ease;
         text-align: center;
         padding: 0 1rem;
       }
@@ -897,6 +907,661 @@
             };
           },
         },
+        // ── WESTERN / DESERT BONFIRE ──
+        {
+          name: "Tumbleweed",
+          makeSong: () => {
+            Tone.Transport.bpm.value = 66 + Math.floor(Math.random() * 10);
+
+            const guitar = new Tone.PluckSynth({
+              attackNoise: 2.5 + Math.random() * 2,
+              dampening: 1600 + Math.random() * 1200,
+              resonance: 0.9 + Math.random() * 0.08,
+            });
+            const gDelay = new Tone.FeedbackDelay(
+              "8n.",
+              0.3 + Math.random() * 0.2,
+            );
+            const gVerb = new Tone.Reverb({
+              decay: 3 + Math.random() * 2,
+              wet: 0.4 + Math.random() * 0.2,
+            });
+            guitar.chain(gDelay, gVerb, Tone.getDestination());
+
+            const bass = new Tone.Synth({
+              volume: -13,
+              oscillator: { type: "triangle" },
+              envelope: {
+                attack: 0.01,
+                decay: 0.35 + Math.random() * 0.2,
+                sustain: 0,
+                release: 0.2,
+              },
+            });
+            bass.toDestination();
+
+            const snare = new Tone.NoiseSynth({
+              volume: -20 + Math.random() * 3,
+              noise: { type: "pink" },
+              envelope: {
+                attack: 0.005,
+                decay: 0.13,
+                sustain: 0,
+                release: 0.04,
+              },
+            });
+            const snareFilter = new Tone.Filter(2400, "bandpass");
+            snare.chain(snareFilter, Tone.getDestination());
+
+            const scales = [
+              [
+                "E2",
+                "G2",
+                "A2",
+                "B2",
+                "D3",
+                "E3",
+                "G3",
+                "A3",
+                "B3",
+                "D4",
+                "E4",
+              ],
+              ["A2", "C3", "D3", "E3", "G3", "A3", "C4", "D4", "E4"],
+            ];
+            const scale = scales[Math.floor(Math.random() * scales.length)];
+            const lowNotes = scale.filter((n) => parseInt(n.slice(-1)) <= 3);
+            const rn = () => scale[Math.floor(Math.random() * scale.length)];
+            const rb = () =>
+              lowNotes[Math.floor(Math.random() * lowNotes.length)];
+
+            // Verse and chorus alternate every 8 bars.
+            // Verse: guitar plays on every beat, bass on 1+3. Lonely but not empty.
+            // Chorus: rolling guitar on every half-beat, snare on 2&4, busier bass.
+            let section = 0;
+            const BAR = Tone.Time("1m").toSeconds();
+            const Q = Tone.Time("4n").toSeconds();
+
+            const mainLoop = new Tone.Loop((time) => {
+              const isVerse = section % 2 === 0;
+              for (let b = 0; b < 8; b++) {
+                const t = time + b * BAR;
+                // Bass always plays on 1, and beat 3 in chorus
+                bass.triggerAttackRelease(rb(), "8n", t);
+                bass.triggerAttackRelease(rb(), "8n", t + Q * 2);
+                if (!isVerse) {
+                  // Chorus: snare on 2 & 4 every bar
+                  snare.triggerAttackRelease("8n", t + Q);
+                  snare.triggerAttackRelease("8n", t + Q * 3);
+                  // Rolling guitar on every half-beat, skip ~20% for breath
+                  [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5].forEach((beat) => {
+                    if (Math.random() > 0.2)
+                      guitar.triggerAttack(rn(), t + beat * Q);
+                  });
+                } else {
+                  // Verse: guitar on every beat, occasionally extra offbeat hit
+                  [0, 1, 2, 3].forEach((beat) => {
+                    guitar.triggerAttack(rn(), t + beat * Q);
+                    if (Math.random() > 0.6)
+                      guitar.triggerAttack(rn(), t + beat * Q + Q * 0.5);
+                  });
+                }
+              }
+              section++;
+            }, "8m").start(0);
+
+            Tone.Transport.start();
+            return () => {
+              mainLoop.dispose();
+              guitar.dispose();
+              gDelay.dispose();
+              gVerb.dispose();
+              bass.dispose();
+              snare.dispose();
+              snareFilter.dispose();
+              Tone.Transport.bpm.value = 120;
+            };
+          },
+        },
+
+        // ── JRPG BOSS FIGHT ──
+        {
+          name: "Final Hour",
+          makeSong: () => {
+            Tone.Transport.bpm.value = 150 + Math.floor(Math.random() * 8);
+
+            const brass = new Tone.PolySynth(Tone.Synth, {
+              volume: -18 + Math.random() * 3,
+              oscillator: { type: "sawtooth" },
+              envelope: {
+                attack: 0.04,
+                decay: 0.15,
+                sustain: 0.75,
+                release: 0.4,
+              },
+            });
+            const brassFilter = new Tone.Filter(2200, "lowpass");
+            const brassVerb = new Tone.Reverb({ decay: 1.5, wet: 0.22 });
+            brass.chain(brassFilter, brassVerb, Tone.getDestination());
+
+            const organ = new Tone.PolySynth(Tone.Synth, {
+              volume: -22 + Math.random() * 3,
+              oscillator: { type: "square" },
+              envelope: {
+                attack: 0.01,
+                decay: 0.1,
+                sustain: 0.8,
+                release: 0.2,
+              },
+            });
+            const organVerb = new Tone.Reverb({ decay: 2, wet: 0.3 });
+            organ.chain(organVerb, Tone.getDestination());
+
+            const bass = new Tone.Synth({
+              volume: -14,
+              oscillator: { type: "sawtooth" },
+              envelope: {
+                attack: 0.005,
+                decay: 0.1,
+                sustain: 0.5,
+                release: 0.1,
+              },
+            });
+            const bassFilter = new Tone.Filter(420, "lowpass");
+            bass.chain(bassFilter, Tone.getDestination());
+
+            const kick = new Tone.MembraneSynth({
+              pitchDecay: 0.06,
+              octaves: 9,
+              volume: -5,
+            });
+            const snare = new Tone.NoiseSynth({
+              volume: -16 + Math.random() * 3,
+              noise: { type: "white" },
+              envelope: {
+                attack: 0.001,
+                decay: 0.18,
+                sustain: 0,
+                release: 0.05,
+              },
+            });
+            const snareFilter = new Tone.Filter(3200, "bandpass");
+            kick.toDestination();
+            snare.chain(snareFilter, Tone.getDestination());
+
+            const themes = [
+              {
+                verse: [
+                  ["D3", "F3", "A3"],
+                  ["C3", "E3", "G3"],
+                  ["Bb2", "D3", "F3"],
+                  ["A2", "C3", "E3"],
+                ],
+                chorus: [
+                  ["D3", "F3", "A3", "D4"],
+                  ["G2", "Bb2", "D3", "G3"],
+                  ["Bb2", "D3", "F3", "Bb3"],
+                  ["A2", "C#3", "E3", "A3"],
+                ],
+                melody: [
+                  "D4",
+                  "F4",
+                  "A4",
+                  "C5",
+                  "D5",
+                  "F5",
+                  "A5",
+                  "G4",
+                  "E4",
+                  "Bb4",
+                  "C5",
+                  "A4",
+                ],
+                basses: ["D2", "A1", "Bb1", "C2", "G2", "F2"],
+              },
+              {
+                verse: [
+                  ["E3", "G3", "B3"],
+                  ["D3", "F#3", "A3"],
+                  ["C3", "E3", "G3"],
+                  ["B2", "D3", "F#3"],
+                ],
+                chorus: [
+                  ["E3", "G3", "B3", "E4"],
+                  ["A2", "C3", "E3", "A3"],
+                  ["C3", "E3", "G3", "C4"],
+                  ["B2", "D#3", "F#3", "B3"],
+                ],
+                melody: [
+                  "E4",
+                  "G4",
+                  "B4",
+                  "D5",
+                  "E5",
+                  "G5",
+                  "A4",
+                  "F#4",
+                  "C5",
+                  "B4",
+                  "D5",
+                  "F#5",
+                ],
+                basses: ["E2", "B1", "C2", "D2", "A2", "G2"],
+              },
+            ];
+            const T = themes[Math.floor(Math.random() * themes.length)];
+            const rn = () =>
+              T.melody[Math.floor(Math.random() * T.melody.length)];
+            const rb = () =>
+              T.basses[Math.floor(Math.random() * T.basses.length)];
+
+            // Verse: tense held chords, driving bass, snare on 2+4.
+            // Chorus: heroic rapid runs, organ sustain, double-time feel.
+            let section = 0;
+            let chordIdx = 0;
+            const BAR = Tone.Time("1m").toSeconds();
+            const Q = Tone.Time("4n").toSeconds();
+            const S = Tone.Time("16n").toSeconds();
+
+            const mainLoop = new Tone.Loop((time) => {
+              const isChorus = section % 3 === 2;
+              const chords = isChorus ? T.chorus : T.verse;
+
+              for (let b = 0; b < 8; b++) {
+                const t = time + b * BAR;
+                const chord = chords[chordIdx % chords.length];
+
+                // Kick: on 1 every bar, extra hits in chorus
+                kick.triggerAttackRelease("C1", "16n", t);
+                kick.triggerAttackRelease("C1", "16n", t + Q * 2);
+                if (isChorus) {
+                  if (Math.random() > 0.4)
+                    kick.triggerAttackRelease("C1", "16n", t + S * 9);
+                  if (Math.random() > 0.5)
+                    kick.triggerAttackRelease("C1", "16n", t + S * 14);
+                }
+
+                // Snare on 2 & 4 always
+                snare.triggerAttackRelease("16n", t + Q);
+                snare.triggerAttackRelease("16n", t + Q * 3);
+                if (isChorus && Math.random() > 0.4)
+                  snare.triggerAttackRelease("16n", t + S * 10);
+
+                // Bass: 8th-note drive in chorus, quarter in verse
+                const bassBeats = isChorus
+                  ? [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5]
+                  : [0, 1, 2, 3];
+                bassBeats.forEach((beat) => {
+                  if (Math.random() > 0.15)
+                    bass.triggerAttackRelease(rb(), "16n", t + beat * Q);
+                });
+
+                // Brass
+                if (isChorus) {
+                  // Heroic rapid runs — most beats filled
+                  [0, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.25, 2.5, 3, 3.5].forEach(
+                    (beat) => {
+                      if (Math.random() > 0.25)
+                        brass.triggerAttackRelease(rn(), "8n", t + beat * Q);
+                    },
+                  );
+                } else {
+                  // Tense stabs — chord on 1, melodic answer on 3
+                  brass.triggerAttackRelease(chord, "4n", t);
+                  brass.triggerAttackRelease(rn(), "4n", t + Q * 2);
+                  if (Math.random() > 0.35)
+                    brass.triggerAttackRelease(rn(), "4n", t + Q * 2.5);
+                }
+
+                // Organ: sustains whole bar in chorus
+                if (isChorus && b % 2 === 0)
+                  organ.triggerAttackRelease(chord, "2m", t);
+
+                if (b % 2 === 1) chordIdx++;
+              }
+              section++;
+            }, "8m").start(0);
+
+            Tone.Transport.start();
+            return () => {
+              mainLoop.dispose();
+              brass.dispose();
+              brassFilter.dispose();
+              brassVerb.dispose();
+              organ.dispose();
+              organVerb.dispose();
+              bass.dispose();
+              bassFilter.dispose();
+              kick.dispose();
+              snare.dispose();
+              snareFilter.dispose();
+              Tone.Transport.bpm.value = 120;
+            };
+          },
+        },
+
+        // ── UNDERWATER PALACE ──
+        {
+          name: "Sunken Hall",
+          makeSong: () => {
+            Tone.Transport.bpm.value = 56 + Math.floor(Math.random() * 10);
+
+            const pad = new Tone.PolySynth(Tone.Synth, {
+              volume: -20 + Math.random() * 3,
+              oscillator: { type: "sine" },
+              envelope: {
+                attack: 3 + Math.random() * 2,
+                decay: 1,
+                sustain: 0.75,
+                release: 6 + Math.random() * 3,
+              },
+            });
+            const padChorus = new Tone.Chorus(
+              0.7 + Math.random(),
+              5 + Math.random() * 3,
+              0.9,
+            ).start();
+            const padVerb = new Tone.Reverb({
+              decay: 9 + Math.random() * 4,
+              wet: 0.88,
+            });
+            pad.chain(padChorus, padVerb, Tone.getDestination());
+
+            const pluck = new Tone.PluckSynth({
+              attackNoise: 1 + Math.random(),
+              dampening: 3800 + Math.random() * 1200,
+              resonance: 0.93 + Math.random() * 0.05,
+            });
+            const pluckDelay = new Tone.FeedbackDelay(
+              "4n.",
+              0.55 + Math.random() * 0.2,
+            );
+            const pluckVerb = new Tone.Reverb({
+              decay: 7 + Math.random() * 4,
+              wet: 0.82,
+            });
+            pluck.chain(pluckDelay, pluckVerb, Tone.getDestination());
+
+            const stoneBass = new Tone.Synth({
+              volume: -18 + Math.random() * 3,
+              oscillator: { type: "sine" },
+              envelope: {
+                attack: 1.5 + Math.random(),
+                decay: 2,
+                sustain: 0.4,
+                release: 5,
+              },
+            });
+            const stoneVerb = new Tone.Reverb({ decay: 8, wet: 0.75 });
+            stoneBass.chain(stoneVerb, Tone.getDestination());
+
+            const chime = new Tone.Synth({
+              volume: -26 + Math.random() * 4,
+              oscillator: { type: "triangle" },
+              envelope: {
+                attack: 0.001,
+                decay: 1.8 + Math.random(),
+                sustain: 0,
+                release: 2.5,
+              },
+            });
+            const chimeVerb = new Tone.Reverb({ decay: 11, wet: 0.96 });
+            chime.chain(chimeVerb, Tone.getDestination());
+
+            const modes = [
+              {
+                pads: [
+                  ["F#3", "A3", "C#4"],
+                  ["E3", "G#3", "B3"],
+                  ["D3", "F#3", "A3"],
+                  ["C#3", "E3", "G#3"],
+                ],
+                melody: [
+                  "F#4",
+                  "G#4",
+                  "A4",
+                  "B4",
+                  "C#5",
+                  "D5",
+                  "E5",
+                  "F#5",
+                  "A5",
+                ],
+                basses: ["F#2", "C#2", "D2", "E2", "B1"],
+              },
+              {
+                pads: [
+                  ["D3", "F3", "A3"],
+                  ["C3", "E3", "G3"],
+                  ["Bb2", "D3", "F3"],
+                  ["A2", "C3", "E3"],
+                ],
+                melody: ["D4", "E4", "F4", "G4", "A4", "Bb4", "C5", "D5", "F5"],
+                basses: ["D2", "A1", "Bb1", "C2", "G2"],
+              },
+            ];
+            const M = modes[Math.floor(Math.random() * modes.length)];
+            const shuffled = [...M.pads].sort(() => Math.random() - 0.5);
+            const rn = () =>
+              M.melody[Math.floor(Math.random() * M.melody.length)];
+            const rb = () =>
+              M.basses[Math.floor(Math.random() * M.basses.length)];
+
+            // Section A: pads + plucks every beat (entry hall, always music playing)
+            // Section B: stone bass added, plucks get a little denser
+            // Section C: chimes added on top — the throne room
+            // All three sections guaranteed full — pads never stop, plucks hit every bar
+            let section = 0;
+            let padIdx = 0;
+            const BAR = Tone.Time("1m").toSeconds();
+            const Q = Tone.Time("4n").toSeconds();
+
+            const mainLoop = new Tone.Loop((time) => {
+              const sec = section % 3;
+              const bars = 8;
+
+              for (let b = 0; b < bars; b++) {
+                const t = time + b * BAR;
+
+                // Pad: new chord every 4 bars, long sustain so it always overlaps
+                if (b % 4 === 0) {
+                  pad.triggerAttackRelease(
+                    shuffled[padIdx % shuffled.length],
+                    "4m",
+                    t,
+                  );
+                  padIdx++;
+                }
+
+                // Stone bass: every 2 bars in section B and C
+                if (sec > 0 && b % 2 === 0)
+                  stoneBass.triggerAttackRelease(rb(), "2m", t);
+
+                // Plucks: at least 3 per bar in all sections, more in B and C
+                const count =
+                  sec === 0
+                    ? 3 + Math.floor(Math.random() * 2)
+                    : 4 + Math.floor(Math.random() * 3);
+                // Spread them across the bar so they feel bubbly not clumped
+                const offsets = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+                  .sort(() => Math.random() - 0.5)
+                  .slice(0, count)
+                  .sort((a, b) => a - b);
+                offsets.forEach((beat) =>
+                  pluck.triggerAttack(rn(), t + beat * Q),
+                );
+
+                // Chimes: section C, 1-2 per bar minimum
+                if (sec === 2) {
+                  chime.triggerAttackRelease(
+                    rn(),
+                    "4n",
+                    t + Math.random() * 2 * Q,
+                  );
+                  if (Math.random() > 0.4)
+                    chime.triggerAttackRelease(
+                      rn(),
+                      "4n",
+                      t + (2 + Math.random()) * Q,
+                    );
+                }
+              }
+              section++;
+            }, "8m").start(0);
+
+            Tone.Transport.start();
+            return () => {
+              mainLoop.dispose();
+              pad.dispose();
+              padChorus.dispose();
+              padVerb.dispose();
+              pluck.dispose();
+              pluckDelay.dispose();
+              pluckVerb.dispose();
+              stoneBass.dispose();
+              stoneVerb.dispose();
+              chime.dispose();
+              chimeVerb.dispose();
+              Tone.Transport.bpm.value = 120;
+            };
+          },
+        },
+
+        // ── OMINOUS BUZZ ──
+        {
+          name: "The Hum",
+          makeSong: () => {
+            Tone.Transport.bpm.value = 50 + Math.floor(Math.random() * 12);
+
+            const drone = new Tone.PolySynth(Tone.Synth, {
+              volume: -18 + Math.random() * 3,
+              oscillator: { type: "sawtooth" },
+              envelope: {
+                attack: 4 + Math.random() * 3,
+                decay: 1,
+                sustain: 0.85,
+                release: 7,
+              },
+            });
+            const droneChorus = new Tone.Chorus(
+              0.4 + Math.random() * 0.4,
+              4 + Math.random() * 3,
+              0.85,
+            ).start();
+            const droneVerb = new Tone.Reverb({
+              decay: 8 + Math.random() * 4,
+              wet: 0.7 + Math.random() * 0.2,
+            });
+            drone.chain(droneChorus, droneVerb, Tone.getDestination());
+
+            const whine = new Tone.Synth({
+              volume: -24 + Math.random() * 4,
+              oscillator: { type: "sawtooth", detune: 15 + Math.random() * 20 },
+              envelope: {
+                attack: 5 + Math.random() * 3,
+                decay: 2,
+                sustain: 0.6,
+                release: 8,
+              },
+            });
+            const whineVerb = new Tone.Reverb({ decay: 10, wet: 0.85 });
+            whine.chain(whineVerb, Tone.getDestination());
+
+            const sub = new Tone.Synth({
+              volume: -16 + Math.random() * 3,
+              oscillator: { type: "sine" },
+              envelope: { attack: 2, decay: 3, sustain: 0.3, release: 5 },
+            });
+            const subVerb = new Tone.Reverb({ decay: 6, wet: 0.5 });
+            sub.chain(subVerb, Tone.getDestination());
+
+            const scrape = new Tone.MetalSynth({
+              volume: -26 + Math.random() * 5,
+              frequency: 80 + Math.random() * 60,
+              harmonicity: 3.1,
+              modulationIndex: 16,
+              resonance: 3000,
+              octaves: 0.8,
+              envelope: {
+                attack: 0.5 + Math.random(),
+                decay: 3 + Math.random() * 2,
+                release: 4,
+              },
+            });
+            const scrapeVerb = new Tone.Reverb({ decay: 9, wet: 0.9 });
+            scrape.chain(scrapeVerb, Tone.getDestination());
+
+            // Dissonant, unresolved clusters
+            const clusters = [
+              ["B2", "C3", "F3"],
+              ["Bb2", "E3", "F3"],
+              ["Ab2", "D3", "Eb3"],
+              ["A2", "Eb3", "E3"],
+              ["C3", "F#3", "G3"],
+              ["B1", "F2", "C3"],
+            ];
+            const whineNotes = ["B4", "C5", "F5", "Bb4", "Eb5", "Ab4", "E5"];
+            const subNotes = ["B1", "C2", "F1", "Bb1", "Ab1", "E1"];
+
+            const rc = () =>
+              clusters[Math.floor(Math.random() * clusters.length)];
+            const rwn = () =>
+              whineNotes[Math.floor(Math.random() * whineNotes.length)];
+            const rsn = () =>
+              subNotes[Math.floor(Math.random() * subNotes.length)];
+
+            // Drone ALWAYS plays — it never stops, new cluster every 4 bars.
+            // Low section (8 bars): drone + sub + occasional scrape.
+            // High section (8 bars): whine added on top for full dread.
+            // Scrape fires on every bar in both sections — the hum never lets up.
+            let section = 0;
+            let clusterIdx = 0;
+            const BAR = Tone.Time("1m").toSeconds();
+
+            const mainLoop = new Tone.Loop((time) => {
+              const isHigh = section % 2 === 1;
+
+              for (let b = 0; b < 8; b++) {
+                const t = time + b * BAR;
+
+                // Drone cluster: refreshed every 4 bars, always sustained
+                if (b % 4 === 0) {
+                  drone.triggerAttackRelease(rc(), "4m", t);
+                  clusterIdx++;
+                }
+
+                // Sub pulse: every 2 bars, always
+                if (b % 2 === 0) sub.triggerAttackRelease(rsn(), "2m", t);
+
+                // Whine: enters high section, long sustain so it overlaps bars
+                if (isHigh && b % 3 === 0)
+                  whine.triggerAttackRelease(rwn(), "3m", t);
+
+                // Scrape: every bar, offset varies — the itch you can't scratch
+                scrape.triggerAttackRelease(
+                  "4n",
+                  t + Math.random() * 0.5 * BAR,
+                );
+              }
+              section++;
+            }, "8m").start(0);
+
+            Tone.Transport.start();
+            return () => {
+              mainLoop.dispose();
+              drone.dispose();
+              droneChorus.dispose();
+              droneVerb.dispose();
+              whine.dispose();
+              whineVerb.dispose();
+              sub.dispose();
+              subVerb.dispose();
+              scrape.dispose();
+              scrapeVerb.dispose();
+              Tone.Transport.bpm.value = 120;
+            };
+          },
+        },
       ];
 
       // ── STATE ──
@@ -929,7 +1594,17 @@
       // ── RENDER ──
       // Cards are built once on init; subsequent calls only patch classes/attrs
       // so CSS transitions have a persistent DOM element to animate between states.
-      const colors = ["#26547C", "#EF476F", "#FFD166", "#024F3B", "#ffb3c1"];
+      const colors = [
+        "#26547C",
+        "#EF476F",
+        "#FFD166",
+        "#024F3B",
+        "#ffb3c1",
+        "#F5AB00",
+        "#E11444",
+        "#639DCF",
+        "#2B233D",
+      ];
 
       function renderCards() {
         const container = document.getElementById("page-songs");
@@ -972,7 +1647,9 @@
 
       function updateCards() {
         songs.forEach((song, idx) => {
-          const card = document.querySelector(`.song-card[data-song="${song.name}"]`);
+          const card = document.querySelector(
+            `.song-card[data-song="${song.name}"]`,
+          );
           if (!card) return;
           const playing = song.name === currentSong;
           const wasPlaying = card.classList.contains("playing");
@@ -988,14 +1665,20 @@
             card.classList.add("stopping");
             // Two rAFs ensure the browser has committed the pinned value to
             // layout before we change it, otherwise it collapses to a no-op.
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-              card.style.borderRadius = "50%";
-              card.addEventListener("transitionend", (e) => {
-                if (e.propertyName !== "border-radius") return;
-                card.classList.remove("stopping");
-                card.style.borderRadius = "";
-              }, { once: true });
-            }));
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                card.style.borderRadius = "50%";
+                card.addEventListener(
+                  "transitionend",
+                  (e) => {
+                    if (e.propertyName !== "border-radius") return;
+                    card.classList.remove("stopping");
+                    card.style.borderRadius = "";
+                  },
+                  { once: true },
+                );
+              }),
+            );
           } else {
             card.classList.toggle("playing", playing);
             card.style.background = playing ? colors[idx] : "";

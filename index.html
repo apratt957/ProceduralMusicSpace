@@ -108,21 +108,43 @@
         justify-content: center;
         gap: 1rem;
         cursor: pointer;
-        transition:
-          border-color 0.3s,
-          background 0.4s;
         flex-shrink: 0;
+        /* Isolate into its own stacking context so background changes
+           don't repaint neighbouring cards */
+        isolation: isolate;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Background colour lives on a pseudo-element so it fades with
+         opacity — a compositor-only property — instead of painting. */
+      .song-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: var(--card-color, transparent);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: -1;
+      }
+      .song-card.playing::before {
+        opacity: 1;
       }
 
       .song-card.playing {
+        /* translateZ(0) promotes the card to its own GPU layer so the
+           border-radius animation runs on the compositor thread, not
+           the main thread — this is the main mobile perf win. */
+        transform: translateZ(0);
+        will-change: border-radius;
         animation: morphing 10s infinite;
       }
 
       .song-card.stopping {
-        transition:
-          border-radius 0.6s ease,
-          border-color 0.3s,
-          background 0.4s;
+        transform: translateZ(0);
+        will-change: border-radius;
+        transition: border-radius 0.6s ease;
       }
 
       .song-card .song-name {
@@ -134,13 +156,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: font-size 0.25s ease;
         text-align: center;
         padding: 0 1rem;
+        /* Scale instead of font-size so the transition is compositor-only */
+        transform-origin: center;
+        transition: transform 0.25s ease;
       }
 
       .song-card.playing > .song-name {
-        font-size: 1.5rem;
+        transform: scale(1.5);
       }
 
       .song-card button {
@@ -1613,6 +1637,7 @@
           const card = document.createElement("div");
           card.className = "song-card";
           card.dataset.song = song.name;
+          card.dataset.idx = idx;
 
           const name = document.createElement("p");
           name.className = "song-name";
@@ -1661,7 +1686,6 @@
             const live = getComputedStyle(card).borderRadius;
             card.classList.remove("playing");
             card.style.borderRadius = live;
-            card.style.background = "";
             card.classList.add("stopping");
             // Two rAFs ensure the browser has committed the pinned value to
             // layout before we change it, otherwise it collapses to a no-op.
@@ -1681,7 +1705,9 @@
             );
           } else {
             card.classList.toggle("playing", playing);
-            card.style.background = playing ? colors[idx] : "";
+            // Set color via CSS custom property so ::before pseudo-element
+            // can pick it up — pseudo-elements can't be styled from JS directly.
+            if (playing) card.style.setProperty("--card-color", colors[idx]);
           }
 
           const btn = card.querySelector("button");
